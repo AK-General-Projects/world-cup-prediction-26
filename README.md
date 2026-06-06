@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# World Cup 2026 Predictions
 
-## Getting Started
+A private prediction league app for the 2026 FIFA World Cup. Built with Next.js, PostgreSQL (Drizzle ORM), NextAuth, and Tailwind CSS. Co-authored with [Claude](https://claude.ai).
 
-First, run the development server:
+## How it works
+
+**Group stage** — users drag teams into their predicted finishing order for each of the 12 groups. Each group is saved independently on drag. 1 point is awarded per team correctly placed.
+
+**Knockout stage** — once the admin enables it after the group stage, users click through the bracket to pick winners round by round. 1 point per correct pick, 2 for the final.
+
+**Leaderboard** — ranks all users by total points. Clicking a user shows only their saved predictions. Scores update as actual results are entered by the admin.
+
+**Admin panel** — controls prediction locks (group stage and knockout independently), bracket setup, and entering actual results.
+
+## Running locally
 
 ```bash
+npm install
+npm run db:push   # apply schema to your Postgres database
+npm run db:seed   # seed teams
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Requires a `.env.local` with `DATABASE_URL`, `AUTH_SECRET`, and optionally `AUTH_URL`.
