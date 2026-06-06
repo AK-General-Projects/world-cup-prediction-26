@@ -43,10 +43,12 @@ export default async function UserPredictionsPage({ params }: { params: Promise<
 
   const teamMap = Object.fromEntries(allTeams.map((t) => [t.id, t]));
 
-  // Build grouped predictions for group stage view
+  // Build grouped predictions for group stage view — only include groups with saved predictions
   const predMap = new Map(groupPreds.map((p) => [p.teamId, p.predictedPosition]));
+  const savedGroupSet = new Set(groupPreds.map((p) => p.group));
   const grouped: Record<string, { id: number; name: string; flagCode: string }[]> = {};
   for (const team of allTeams) {
+    if (!savedGroupSet.has(team.group)) continue;
     if (!grouped[team.group]) grouped[team.group] = [];
     grouped[team.group].push({ id: team.id, name: team.name, flagCode: team.flagCode });
   }

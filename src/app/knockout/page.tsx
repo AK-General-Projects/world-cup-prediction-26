@@ -82,6 +82,12 @@ export default async function KnockoutPage() {
             : "Click a team to advance them to the next round."}
         </p>
       </div>
+      {!knockoutLocked && (
+        <div className="mb-4 flex items-start gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-4 py-2.5">
+          <span className="mt-px">ℹ️</span>
+          <span>Predictions lock 1 hour before the first knockout match begins.</span>
+        </div>
+      )}
       <KnockoutBracket
         bracketSetup={bracketSetup}
         initialPicks={initialPicks}

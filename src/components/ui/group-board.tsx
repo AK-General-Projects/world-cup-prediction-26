@@ -8,9 +8,10 @@ type Team = { id: number; name: string; flagCode: string };
 type GroupedTeams = Record<string, Team[]>;
 type SaveStatus = "idle" | "saving" | "saved";
 
-export default function GroupBoard({ initialGroups, isLocked }: { initialGroups: GroupedTeams; isLocked: boolean }) {
+export default function GroupBoard({ initialGroups, isLocked, savedGroups }: { initialGroups: GroupedTeams; isLocked: boolean; savedGroups: string[] }) {
   const [groups, setGroups] = useState<GroupedTeams>(initialGroups);
   const [status, setStatus] = useState<Record<string, SaveStatus>>({});
+  const [persistedGroups, setPersistedGroups] = useState<Set<string>>(new Set(savedGroups));
   const [saveError, setSaveError] = useState<string | null>(null);
 
   async function handleDragEnd(result: DropResult) {
@@ -31,6 +32,7 @@ export default function GroupBoard({ initialGroups, isLocked }: { initialGroups:
 
     try {
       await saveGroupPredictions(key, updated.map((t) => t.id));
+      setPersistedGroups((prev) => new Set(prev).add(key));
       setStatus((s) => ({ ...s, [key]: "saved" }));
       setTimeout(() => setStatus((s) => ({ ...s, [key]: "idle" })), 2000);
     } catch {
@@ -56,11 +58,14 @@ export default function GroupBoard({ initialGroups, isLocked }: { initialGroups:
             <div key={letter} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
                 <h2 className="font-semibold text-gray-900 text-sm">Group {letter}</h2>
-                {status[letter] === "saving" && (
+                {status[letter] === "saving" ? (
                   <span className="text-xs text-gray-400">Saving...</span>
-                )}
-                {status[letter] === "saved" && (
+                ) : status[letter] === "saved" ? (
                   <span className="text-xs text-green-500">Saved ✓</span>
+                ) : persistedGroups.has(letter) ? (
+                  <span className="text-xs text-green-500">Saved</span>
+                ) : (
+                  <span className="text-xs text-gray-400">Not saved</span>
                 )}
               </div>
 

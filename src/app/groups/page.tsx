@@ -19,6 +19,7 @@ export default async function GroupsPage() {
   ]);
 
   const predMap = new Map(predictions.map((p) => [p.teamId, p.predictedPosition]));
+  const savedGroupLetters = [...new Set(predictions.map((p) => p.group))];
 
   const grouped: Record<string, { id: number; name: string; flagCode: string }[]> = {};
   for (const team of allTeams) {
@@ -49,13 +50,23 @@ export default async function GroupsPage() {
           Drag teams to predict their final group standings.
         </p>
       </div>
-      {groupStageLocked && (
+      {groupStageLocked ? (
         <div className="mb-4 flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-2.5">
           <span>🔒</span>
           <span>Group stage predictions are locked — matches have begun.</span>
         </div>
+      ) : (
+        <div className="mb-4 flex items-start gap-2 text-sm text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-4 py-2.5">
+          <span className="mt-px">ℹ️</span>
+          <span>
+            Predictions lock 1 hour before the first match.{" "}
+            <span className="font-medium">
+              Jun 11 at 11 AM PT&nbsp;·&nbsp;1 PM CT&nbsp;·&nbsp;8 PM CAT&nbsp;·&nbsp;11:30 PM IST
+            </span>
+          </span>
+        </div>
       )}
-      <GroupBoard initialGroups={grouped} isLocked={groupStageLocked} />
+      <GroupBoard initialGroups={grouped} isLocked={groupStageLocked} savedGroups={savedGroupLetters} />
     </div>
   );
 }
