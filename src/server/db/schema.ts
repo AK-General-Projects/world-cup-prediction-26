@@ -1,11 +1,17 @@
 import { pgTable, text, integer, uuid, timestamp, unique } from "drizzle-orm/pg-core";
 
+export const leagues = pgTable("leagues", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull().unique(),
+});
+
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: text("role", { enum: ["admin", "user"] }).notNull().default("user"),
+  leagueId: integer("league_id").references(() => leagues.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -1,5 +1,6 @@
 import { db } from "@/server/db";
 import { users, groupPredictions, knockoutPredictions, actualGroupStandings, actualKnockoutResults } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 
 export type UserScore = {
   userId: string;
@@ -9,9 +10,9 @@ export type UserScore = {
   total: number;
 };
 
-export async function getLeaderboard(): Promise<UserScore[]> {
+export async function getLeaderboard(leagueId: number): Promise<UserScore[]> {
   const [allUsers, allGroupPreds, allKnockoutPreds, actGroupRows, actKoRows] = await Promise.all([
-    db.select({ id: users.id, name: users.name }).from(users),
+    db.select({ id: users.id, name: users.name }).from(users).where(eq(users.leagueId, leagueId)),
     db.select().from(groupPredictions),
     db.select().from(knockoutPredictions),
     db.select().from(actualGroupStandings),

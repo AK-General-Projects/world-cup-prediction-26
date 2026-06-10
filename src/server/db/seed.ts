@@ -1,9 +1,13 @@
 import { db } from "./index";
-import { users, teams, appSettings } from "./schema";
+import { users, teams, appSettings, leagues } from "./schema";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
 async function seed() {
   console.log("Seeding...");
+
+  await db.insert(leagues).values({ name: "league1" }).onConflictDoNothing();
+  const [league1] = await db.select().from(leagues).where(eq(leagues.name, "league1"));
 
   const passwordHash = await bcrypt.hash("admn", 10);
   await db.insert(users).values({
@@ -11,6 +15,7 @@ async function seed() {
     email: "admin",
     passwordHash,
     role: "admin",
+    leagueId: league1.id,
   }).onConflictDoNothing();
 
   await db.insert(teams).values([

@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { db } from "@/server/db";
-import { appSettings, knockoutBracket, users, actualGroupStandings, actualKnockoutResults } from "@/server/db/schema";
+import { appSettings, knockoutBracket, users, actualGroupStandings, actualKnockoutResults, leagues } from "@/server/db/schema";
 import { and, eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -31,15 +31,26 @@ export async function saveBracketMatchup(
     });
 }
 
-export async function createUser(name: string, email: string, password: string) {
+export async function createUser(name: string, email: string, password: string, leagueId: number) {
   await requireAdmin();
   const passwordHash = await bcrypt.hash(password, 10);
-  await db.insert(users).values({ name, email, passwordHash, role: "user" });
+  await db.insert(users).values({ name, email, passwordHash, role: "user", leagueId });
 }
 
 export async function deleteUser(userId: string) {
   await requireAdmin();
   await db.delete(users).where(eq(users.id, userId));
+}
+
+export async function createLeague(name: string) {
+  await requireAdmin();
+  const [league] = await db.insert(leagues).values({ name }).returning();
+  return league;
+}
+
+export async function assignUserLeague(userId: string, leagueId: number) {
+  await requireAdmin();
+  await db.update(users).set({ leagueId }).where(eq(users.id, userId));
 }
 
 export async function saveActualGroupStandings(group: string, orderedTeamIds: (number | null)[]) {

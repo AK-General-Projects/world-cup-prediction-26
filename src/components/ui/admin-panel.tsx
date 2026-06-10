@@ -4,10 +4,12 @@ import { useState } from "react";
 import {
   updateSetting, saveBracketMatchup, createUser, deleteUser,
   saveActualGroupStandings, saveActualKnockoutResult,
+  createLeague, assignUserLeague,
 } from "@/server/actions/admin";
 
 type Team = { id: number; name: string; flagCode: string; group: string };
-type User = { id: string; name: string; email: string; role: string };
+type User = { id: string; name: string; email: string; role: string; leagueId: number | null };
+type League = { id: number; name: string };
 type Settings = {
   group_stage_locked: boolean;
   knockout_enabled: boolean;
@@ -23,6 +25,7 @@ interface Props {
   bracket: Bracket;
   teams: Team[];
   users: User[];
+  leagues: League[];
   actualGroupStandings: ActualGroupRow[];
   actualKnockoutResults: ActualKoRow[];
 }
@@ -79,13 +82,16 @@ function initKoResults(rows: ActualKoRow[]): Record<RoundKey, (number | null)[]>
 }
 
 export default function AdminPanel({
-  settings: initSettings, bracket: initBracket, teams, users: initUsers,
+  settings: initSettings, bracket: initBracket, teams, users: initUsers, leagues: initLeagues,
   actualGroupStandings: initActualGroup, actualKnockoutResults: initActualKo,
 }: Props) {
   const [settings, setSettings] = useState(initSettings);
   const [bracket, setBracket] = useState(initBracket);
   const [users, setUsers] = useState(initUsers);
-  const [newUser, setNewUser] = useState({ name: "", email: "", password: "" });
+  const [leagues, setLeagues] = useState(initLeagues);
+  const [newLeagueName, setNewLeagueName] = useState("");
+  const [leagueError, setLeagueError] = useState("");
+  const [newUser, setNewUser] = useState({ name: "", email: "", password: "", leagueId: initLeagues[0]?.id ?? 0 });
   const [userError, setUserError] = useState("");
   const [userSuccess, setUserSuccess] = useState("");
   const [groupStandings, setGroupStandings] = useState(() => initGroupStandings(teams, initActualGroup));
@@ -156,9 +162,9 @@ export default function AdminPanel({
     setUserError("");
     setUserSuccess("");
     try {
-      await createUser(newUser.name, newUser.email, newUser.password);
-      setUsers((u) => [...u, { id: crypto.randomUUID(), name: newUser.name, email: newUser.email, role: "user" }]);
-      setNewUser({ name: "", email: "", password: "" });
+      await createUser(newUser.name, newUser.email, newUser.password, newUser.leagueId);
+      setUsers((u) => [...u, { id: crypto.randomUUID(), name: newUser.name, email: newUser.email, role: "user", leagueId: newUser.leagueId }]);
+      setNewUser({ name: "", email: "", password: "", leagueId: leagues[0]?.id ?? 0 });
       setUserSuccess("User created.");
     } catch {
       setUserError("Username already exists or error creating user.");
@@ -172,6 +178,31 @@ export default function AdminPanel({
       setUsers((u) => u.filter((x) => x.id !== userId));
     } catch {
       showError("Failed to remove user — please try again.");
+    }
+  }
+
+  async function handleCreateLeague(e: React.FormEvent) {
+    e.preventDefault();
+    setLeagueError("");
+    const name = newLeagueName.trim();
+    if (!name) return;
+    try {
+      const league = await createLeague(name);
+      setLeagues((l) => [...l, league]);
+      setNewLeagueName("");
+    } catch {
+      setLeagueError("League already exists or error creating league.");
+    }
+  }
+
+  async function handleAssignLeague(userId: string, leagueId: number) {
+    const prev = users.find((u) => u.id === userId)?.leagueId ?? null;
+    setUsers((u) => u.map((x) => x.id === userId ? { ...x, leagueId } : x));
+    try {
+      await assignUserLeague(userId, leagueId);
+    } catch {
+      setUsers((u) => u.map((x) => x.id === userId ? { ...x, leagueId: prev } : x));
+      showError("Failed to assign league — please try again.");
     }
   }
 
@@ -317,6 +348,30 @@ export default function AdminPanel({
         </div>
       </section>
 
+      {/* Leagues */}
+      <section className="bg-white border border-gray-200 rounded-xl p-6">
+        <h2 className="font-semibold text-gray-900 mb-1">Leagues</h2>
+        <p className="text-xs text-gray-500 mb-4">Each user belongs to one league. Leaderboards are scoped per league.</p>
+
+        <form onSubmit={handleCreateLeague} className="flex flex-wrap gap-2 mb-4">
+          <input
+            placeholder="League name" required value={newLeagueName}
+            onChange={(e) => setNewLeagueName(e.target.value)}
+            className="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-400 w-48"
+          />
+          <button type="submit" className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-3 py-1 rounded transition-colors">
+            Add league
+          </button>
+          {leagueError && <p className="w-full text-xs text-red-500">{leagueError}</p>}
+        </form>
+
+        <div className="flex flex-wrap gap-2">
+          {leagues.map((l) => (
+            <span key={l.id} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">{l.name}</span>
+          ))}
+        </div>
+      </section>
+
       {/* User Management */}
       <section className="bg-white border border-gray-200 rounded-xl p-6">
         <h2 className="font-semibold text-gray-900 mb-4">Users</h2>
@@ -337,6 +392,15 @@ export default function AdminPanel({
             onChange={(e) => setNewUser((u) => ({ ...u, password: e.target.value }))}
             className="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-400 w-32"
           />
+          <select
+            required value={newUser.leagueId}
+            onChange={(e) => setNewUser((u) => ({ ...u, leagueId: parseInt(e.target.value) }))}
+            className="border border-gray-200 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-green-400"
+          >
+            {leagues.map((l) => (
+              <option key={l.id} value={l.id}>{l.name}</option>
+            ))}
+          </select>
           <button type="submit" className="bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-3 py-1 rounded transition-colors">
             Add user
           </button>
@@ -350,6 +414,7 @@ export default function AdminPanel({
               <th className="pb-2 font-medium">Name</th>
               <th className="pb-2 font-medium">Username</th>
               <th className="pb-2 font-medium">Role</th>
+              <th className="pb-2 font-medium">League</th>
               <th className="pb-2" />
             </tr>
           </thead>
@@ -362,6 +427,17 @@ export default function AdminPanel({
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                     u.role === "admin" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"
                   }`}>{u.role}</span>
+                </td>
+                <td className="py-2">
+                  <select
+                    value={u.leagueId ?? ""}
+                    onChange={(e) => handleAssignLeague(u.id, parseInt(e.target.value))}
+                    className="text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
+                  >
+                    {leagues.map((l) => (
+                      <option key={l.id} value={l.id}>{l.name}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="py-2 text-right">
                   {u.role !== "admin" && (

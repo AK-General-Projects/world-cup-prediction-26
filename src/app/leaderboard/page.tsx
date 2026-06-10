@@ -2,7 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/server/db";
-import { appSettings } from "@/server/db/schema";
+import { appSettings, users } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 import { getLeaderboard } from "@/server/services/scoring";
 
 export default async function LeaderboardPage() {
@@ -14,7 +15,8 @@ export default async function LeaderboardPage() {
   const predictionsVisible = s.predictions_visible === "true";
   const isAdmin = session.user.role === "admin";
 
-  const scores = await getLeaderboard();
+  const [me] = await db.select({ leagueId: users.leagueId }).from(users).where(eq(users.id, session.user.id));
+  const scores = me?.leagueId ? await getLeaderboard(me.leagueId) : [];
 
   return (
     <div>

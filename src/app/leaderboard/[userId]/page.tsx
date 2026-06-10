@@ -27,10 +27,14 @@ export default async function UserPredictionsPage({ params }: { params: Promise<
   const isAdmin = session.user.role === "admin";
   const isOwnProfile = session.user.id === userId;
 
-  if (!isAdmin && !predictionsVisible && !isOwnProfile) redirect("/leaderboard");
-
-  const [targetUser] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, userId));
+  const [targetUser] = await db.select({ id: users.id, name: users.name, leagueId: users.leagueId }).from(users).where(eq(users.id, userId));
   if (!targetUser) notFound();
+
+  if (!isAdmin && !isOwnProfile) {
+    const [me] = await db.select({ leagueId: users.leagueId }).from(users).where(eq(users.id, session.user.id));
+    const sameLeague = me?.leagueId !== null && me?.leagueId === targetUser.leagueId;
+    if (!predictionsVisible || !sameLeague) redirect("/leaderboard");
+  }
 
   const [allTeams, groupPreds, knockoutPreds, bracketRows, actGroupRows, actKoRows] = await Promise.all([
     db.select().from(teams),

@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/server/db";
-import { appSettings, knockoutBracket, teams, users, actualGroupStandings, actualKnockoutResults } from "@/server/db/schema";
+import { appSettings, knockoutBracket, teams, users, actualGroupStandings, actualKnockoutResults, leagues } from "@/server/db/schema";
 import AdminPanel from "@/components/ui/admin-panel";
 
 export default async function AdminPage() {
@@ -10,13 +10,14 @@ export default async function AdminPage() {
   if (!session) redirect("/");
   if (session.user.role !== "admin") redirect("/dashboard");
 
-  const [settingsRows, bracketRows, allTeams, allUsers, actGroupRows, actKoRows] = await Promise.all([
+  const [settingsRows, bracketRows, allTeams, allUsers, actGroupRows, actKoRows, allLeagues] = await Promise.all([
     db.select().from(appSettings),
     db.select().from(knockoutBracket),
     db.select().from(teams),
-    db.select({ id: users.id, name: users.name, email: users.email, role: users.role }).from(users),
+    db.select({ id: users.id, name: users.name, email: users.email, role: users.role, leagueId: users.leagueId }).from(users),
     db.select().from(actualGroupStandings),
     db.select().from(actualKnockoutResults),
+    db.select().from(leagues),
   ]);
 
   const s = Object.fromEntries(settingsRows.map((r) => [r.key, r.value]));
@@ -45,6 +46,7 @@ export default async function AdminPage() {
         bracket={bracket}
         teams={allTeams}
         users={allUsers}
+        leagues={allLeagues}
         actualGroupStandings={actGroupRows}
         actualKnockoutResults={actKoRows}
       />
