@@ -38,6 +38,28 @@ const ROUND_LABELS: Record<RoundKey, string> = {
 };
 const ROUND_COUNTS: Record<RoundKey, number> = { r32: 16, r16: 8, qf: 4, sf: 2, final: 1 };
 
+function getKoSlotOptions(
+  rk: RoundKey,
+  slotIdx: number,
+  bracket: Bracket,
+  koResults: Record<RoundKey, (number | null)[]>,
+  teams: Team[],
+): Team[] {
+  const roundIdx = ROUND_KEYS.indexOf(rk);
+  let ids: number[];
+  if (roundIdx === 0) {
+    const match = bracket[slotIdx];
+    ids = [match?.team1Id, match?.team2Id].filter((id): id is number => id != null);
+  } else {
+    const prevRk = ROUND_KEYS[roundIdx - 1];
+    const id1 = koResults[prevRk][slotIdx * 2];
+    const id2 = koResults[prevRk][slotIdx * 2 + 1];
+    ids = [id1, id2].filter((id): id is number => id != null);
+  }
+  if (ids.length === 0) return teams;
+  return teams.filter((t) => ids.includes(t.id));
+}
+
 function Toggle({ label, description, value, onToggle }: {
   label: string; description: string; value: boolean; onToggle: () => void;
 }) {
@@ -330,18 +352,24 @@ export default function AdminPanel({
             <div key={rk}>
               <h3 className="text-xs font-semibold text-gray-600 mb-2">{ROUND_LABELS[rk]}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                {Array.from({ length: ROUND_COUNTS[rk] }, (_, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400 w-12 flex-shrink-0">Slot {i + 1}</span>
-                    <select
-                      value={koResults[rk][i] ?? ""}
-                      onChange={(e) => handleKoResultChange(rk, i, e.target.value)}
-                      className="flex-1 text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
-                    >
-                      {teamOptions}
-                    </select>
-                  </div>
-                ))}
+                {Array.from({ length: ROUND_COUNTS[rk] }, (_, i) => {
+                  const slotTeams = getKoSlotOptions(rk, i, bracket, koResults, teams);
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-12 flex-shrink-0">Slot {i + 1}</span>
+                      <select
+                        value={koResults[rk][i] ?? ""}
+                        onChange={(e) => handleKoResultChange(rk, i, e.target.value)}
+                        className="flex-1 text-xs border border-gray-200 rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-green-400"
+                      >
+                        <option value="">— none —</option>
+                        {slotTeams.map((t) => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

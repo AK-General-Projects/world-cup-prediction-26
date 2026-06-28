@@ -57,7 +57,7 @@ function ResultMatchCard({
   userPick: number | null;
   actualWinner: number | null | undefined; // undefined = no actual data yet
 }) {
-  const hasActual = actualWinner !== undefined;
+  const hasActual = actualWinner != null;
 
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm" style={{ width: CARD_W }}>
