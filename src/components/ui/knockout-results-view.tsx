@@ -67,7 +67,7 @@ function ResultMatchCard({
         const isCorrect = isUserPick && isActualWinner;
         const isWrong = isUserPick && hasActual && !isActualWinner;
 
-        const bgClass = isCorrect ? "bg-green-50" : isWrong ? "bg-red-50" : isUserPick ? "bg-green-50" : "";
+        const bgClass = isCorrect ? "bg-green-50" : isWrong ? "bg-red-50" : isUserPick && !hasActual ? "bg-blue-50" : "";
 
         return (
           <div
@@ -87,7 +87,7 @@ function ResultMatchCard({
                 <span className="text-xs truncate flex-1">{team.name}</span>
                 {isCorrect && <span className="text-green-500 text-xs flex-shrink-0">✓</span>}
                 {isWrong   && <span className="text-red-400   text-xs flex-shrink-0">✗</span>}
-                {isUserPick && !hasActual && <span className="text-green-500 text-xs flex-shrink-0">✓</span>}
+                {isUserPick && !hasActual && <span className="text-blue-400 text-xs flex-shrink-0">·</span>}
               </>
             ) : (
               <span className="text-gray-300 text-xs italic px-1">TBD</span>
